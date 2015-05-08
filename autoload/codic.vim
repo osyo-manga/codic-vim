@@ -232,5 +232,41 @@ function! s:OpenScratch(name)
   return bufnr(a:name)
 endfunction
 
+
+
+let g:codic#cache_root = get(g:, "codic#cache_root", expand($HOME . "/.vimcodic/"))
+
+function! s:create_cache(lang)
+  let dictdir = g:codic_dictdir
+  let Mapfn = function('s:Map_' . a:lang)
+  let dict_{a:lang} = s:LoadDict(dictdir, a:lang, Mapfn)
+
+  if !isdirectory(g:codic#cache_root)
+    call mkdir(g:codic#cache_root, "p")
+  endif
+  let src = 'let g:codic_cache = ' . string(dict_{a:lang})
+  call writefile([src], g:codic#cache_root . a:lang)
+  return dict_{a:lang}
+endfunction
+
+
+function! s:read_cache(lang)
+  if !filereadable(g:codic#cache_root . a:lang)
+    return s:create_cache(a:lang)
+  endif
+  execute "source" g:codic#cache_root . a:lang
+  return g:codic_cache
+endfunction
+
+
+function! s:GetDict(lang)
+  if exists('s:dict_' . a:lang)
+    return s:dict_{a:lang}
+  endif
+  let s:dict_{a:lang} = s:read_cache(a:lang)
+  return s:dict_{a:lang}
+endfunction
+
+
 let &cpo = s:saved_cpo
 unlet s:saved_cpo
